@@ -1,0 +1,9 @@
+# these are examples of necessary data, please create your own "api_parameters.yaml" with your own data
+session_name: fix_bot_session # name of session file
+api_id: 12345
+api_hash: '0123456789abcdef0123456789abcdef'
+# all folders should be manually created
+group_folder_name: G
+supergroup_folder_name: SG
+channel_folder_name: C
+# this exact data will not work
