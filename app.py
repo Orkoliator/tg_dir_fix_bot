@@ -1,6 +1,7 @@
 from telethon import TelegramClient
 from telethon.tl.functions.messages import GetDialogFiltersRequest, UpdateDialogFilterRequest
 from telethon.tl.types import DialogFilter
+from telethon import types
 from yaml import safe_load
 
 tg_peers = {
@@ -43,7 +44,7 @@ async def updateFilter(folder_id, folder_title, peers):
         id=folder_id,
         filter=DialogFilter(
             id=folder_id,
-            title=folder_title,
+            title=types.TextWithEntities(text=folder_title, entities=[types.MessageEntityUnknown(offset=folder_id, length=folder_id)]),
             pinned_peers=[],
             exclude_peers=[],
             include_peers=peers,
@@ -58,11 +59,11 @@ async def updateFilter(folder_id, folder_title, peers):
 async def modifyFilter(tg_peers):
     request = await client(GetDialogFiltersRequest())
     for dialog_filter in request.filters[1:]:
-        if dialog_filter.title == group_folder_name:
+        if dialog_filter.title.text == group_folder_name:
             await updateFilter(dialog_filter.id, group_folder_name, tg_peers['groups'])
-        elif dialog_filter.title == supergroup_folder_name:
+        elif dialog_filter.title.text == supergroup_folder_name:
             await updateFilter(dialog_filter.id, supergroup_folder_name, tg_peers['megagroups']+tg_peers['gigagroups'])
-        elif dialog_filter.title == channel_folder_name:
+        elif dialog_filter.title.text == channel_folder_name:
             await updateFilter(dialog_filter.id, channel_folder_name, tg_peers['channels'])
 
 with client:
