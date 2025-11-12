@@ -3,6 +3,7 @@ from telethon.tl.functions.messages import GetDialogFiltersRequest, UpdateDialog
 from telethon.tl.types import DialogFilter
 from telethon import types
 from yaml import safe_load
+import asyncio
 
 tg_peers = {
     'channels': [],
@@ -20,10 +21,7 @@ with open('api_parameters.yaml', 'r') as config:
     supergroup_folder_name = session_data['supergroup_folder_name']
     channel_folder_name = session_data['channel_folder_name']
 
-client = TelegramClient(session_name, api_id, api_hash)
-client.start()
-
-async def main():
+async def dialogs_process(client):
     async for dialog in client.iter_dialogs():
         if dialog.is_channel:
             data = await client.get_entity(dialog.id)
@@ -39,7 +37,7 @@ async def main():
             data = await client.get_entity(dialog.id)
             tg_peers['groups'].append(await client.get_input_entity(data.id))
 
-async def updateFilter(folder_id, folder_title, peers):
+async def updateFilter(client, folder_id, folder_title, peers):
     await client(UpdateDialogFilterRequest(
         id=folder_id,
         filter=DialogFilter(
@@ -56,17 +54,21 @@ async def updateFilter(folder_id, folder_title, peers):
         )
     ))
 
-async def modifyFilter(tg_peers):
+async def modifyFilter(client, tg_peers):
     request = await client(GetDialogFiltersRequest())
     for dialog_filter in request.filters[1:]:
         if dialog_filter.title.text == group_folder_name:
-            await updateFilter(dialog_filter.id, group_folder_name, tg_peers['groups'])
+            await updateFilter(client, dialog_filter.id, group_folder_name, tg_peers['groups'])
         elif dialog_filter.title.text == supergroup_folder_name:
-            await updateFilter(dialog_filter.id, supergroup_folder_name, tg_peers['megagroups']+tg_peers['gigagroups'])
+            await updateFilter(client, dialog_filter.id, supergroup_folder_name, tg_peers['megagroups']+tg_peers['gigagroups'])
         elif dialog_filter.title.text == channel_folder_name:
-            await updateFilter(dialog_filter.id, channel_folder_name, tg_peers['channels'])
+            await updateFilter(client, dialog_filter.id, channel_folder_name, tg_peers['channels'])
 
-with client:
-    client.loop.run_until_complete(main())
-    client.loop.run_until_complete(modifyFilter(tg_peers))
-    print('done')
+async def main():
+    async with TelegramClient(session_name, api_id, api_hash) as client:
+        await dialogs_process(client)
+        await modifyFilter(client, tg_peers)
+        print('done')
+
+if __name__ == "__main__":
+    asyncio.run(main())
